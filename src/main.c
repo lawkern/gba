@@ -2,15 +2,13 @@
 
 #include "gba.h"
 
-void draw_pixel(int x, int y, u16 color)
+static void draw_pixel(int x, int y, u16 color)
 {
    VRAM[SCREEN_WIDTH*y + x] = color;
 }
 
-int main(void)
+static void draw_gradient(void)
 {
-   REG_DISPCNT = MODE3|BG2;
-
    for(int y = 0; y < SCREEN_HEIGHT; y++)
    {
       for(int x = 0; x < SCREEN_WIDTH; x++)
@@ -18,18 +16,28 @@ int main(void)
          draw_pixel(x, y, RGB(x*31/SCREEN_WIDTH, 15, y*31/SCREEN_HEIGHT));
       }
    }
+}
+
+#define START_POSX 120
+#define START_POSY 80
+
+int main(void)
+{
+   REG_DISPCNT = MODE3|BG2;
+
+   draw_gradient();
 
    int dim = 10;
-   int posx = 120;
-   int posy = 80;
-   int dx = 2;
-   int dy = 1;
+   int posx = START_POSX;
+   int posy = START_POSY;
+
+   gba_input input = {0};
 
    while(1)
    {
       // Wait for vertical blank.
-      while(REG_VCOUNT >= 160) {}
-      while(REG_VCOUNT < 160) {}
+      while(REG_VCOUNT >= SCREEN_HEIGHT) {}
+      while(REG_VCOUNT < SCREEN_HEIGHT) {}
 
       for(int y = posy; y < posy+dim; y++)
       {
@@ -39,11 +47,18 @@ int main(void)
          }
       }
 
-      posx += dx;
-      posy += dy;
+      gba_process_input(&input);
+      if(is_held(input, BUTTON_LEFT))  posx -= 1;
+      if(is_held(input, BUTTON_RIGHT)) posx += 1;
+      if(is_held(input, BUTTON_UP))    posy -= 1;
+      if(is_held(input, BUTTON_DOWN))  posy += 1;
 
-      if(posx <= 0 || posx >= SCREEN_WIDTH-dim)  dx = -dx;
-      if(posy <= 0 || posy >= SCREEN_HEIGHT-dim) dy = -dy;
+      if(was_pressed(input, BUTTON_START))
+      {
+         posx = START_POSX;
+         posy = START_POSY;
+         draw_gradient();
+      }
 
       for(int y = posy; y < posy+dim; y++)
       {

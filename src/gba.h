@@ -8,6 +8,7 @@ typedef uint16_t u16;
 typedef uint32_t u32;
 
 #define REG_DISPCNT  *((volatile u16 *)0x4000000)
+#define REG_DISPSTAT *((volatile u16 *)0x4000004)
 #define REG_VCOUNT   *((volatile u16 *)0x4000006)
 
 enum
@@ -25,6 +26,54 @@ enum
    BG3 = 0x0800,
    OBJ = 0x1000,
 };
+
+#define REG_KEYINPUT *((volatile u16 *)0x4000130)
+#define REG_KEYCNT   *((volatile u16 *)0x4000132)
+
+typedef enum {
+   BUTTON_A      = 0x0001,
+   BUTTON_B      = 0x0002,
+   BUTTON_SELECT = 0x0004,
+   BUTTON_START  = 0x0008,
+   BUTTON_RIGHT  = 0x0010,
+   BUTTON_LEFT   = 0x0020,
+   BUTTON_UP     = 0x0040,
+   BUTTON_DOWN   = 0x0080,
+   BUTTON_R      = 0x0100,
+   BUTTON_L      = 0x0200,
+} gba_button;
+
+typedef struct {
+   u16 current;
+   u16 previous;
+} gba_input;
+
+inline void gba_process_input(gba_input *input)
+{
+   u16 button_mask = 0x03FF;
+   input->previous = input->current;
+   input->current = ~REG_KEYINPUT & button_mask;
+}
+
+// TODO: These could be made "faster" by not passing in the input struct and
+// replacing the boolean logic with bit manipulations. Check back later to see
+// if this ever matters in practice.
+
+inline u32 is_held(gba_input input, gba_button button)
+{
+   // The button is currently down.
+   return(input.current & button);
+}
+inline u32 was_pressed(gba_input input, gba_button button)
+{
+   // The button was pressed this frame.
+   return(!(input.previous & button) && (input.current & button));
+}
+inline u32 was_released(gba_input input, gba_button button)
+{
+   // The button was released this frame.
+   return((input.previous & button) && !(input.current & button));
+}
 
 #define VRAM ((volatile u16 *)0x06000000)
 #define SCREEN_WIDTH  240
