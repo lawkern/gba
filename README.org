@@ -1,0 +1,16 @@
+* Dependencies
+
+- arm-none-eabi-gcc :: Download from your favorite package manager. Includes the
+  GCC compiler toolchain for ARM targets. We use its versions of ~as~, ~gcc~,
+  and ~objcopy~.
+
+- make :: The build is handled by the top-level Makefile. In addition to
+  building the ROM, it will use the host system's C compiler to compile the
+  included ROM fixer.
+
+- RetroArch :: Calling ~make run~ will execute the compiled ROM using the mgba
+  core included with RetroArch. To use a different emulator, instead call:
+
+  #+BEGIN_SRC sh
+  make EMU=your_favorite_emulator run
+  #+END_SRC
