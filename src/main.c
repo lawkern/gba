@@ -1,6 +1,7 @@
 /* (c) copyright 2025 Lawrence D. Kern /////////////////////////////////////// */
 
 #include "gba.h"
+#include "tile.c"
 
 static void draw_pixel(int x, int y, u16 color)
 {
@@ -11,15 +12,31 @@ static void draw_gradient(void)
 {
    for(int y = 0; y < SCREEN_HEIGHT; y++)
    {
+      u16 b = 31*y / SCREEN_HEIGHT;
       for(int x = 0; x < SCREEN_WIDTH; x++)
       {
-         draw_pixel(x, y, RGB(x*31/SCREEN_WIDTH, 15, y*31/SCREEN_HEIGHT));
+         u16 r = 31*x / SCREEN_WIDTH;
+         draw_pixel(x, y, RGB(r, 15, b));
       }
    }
 }
 
-#define START_POSX 120
-#define START_POSY 80
+static _Bool gba_begin_frame(gba_input *input)
+{
+   // Wait for vertical blank.
+   while(REG_VCOUNT >= SCREEN_HEIGHT) {}
+   while(REG_VCOUNT < SCREEN_HEIGHT) {}
+
+   gba_process_input(input);
+
+   _Bool poweroff_requested =
+      is_held(*input, BUTTON_A) &&
+      is_held(*input, BUTTON_B) &&
+      is_held(*input, BUTTON_L) &&
+      is_held(*input, BUTTON_R);
+
+   return(!poweroff_requested);
+}
 
 int main(void)
 {
@@ -28,26 +45,22 @@ int main(void)
    draw_gradient();
 
    int dim = 10;
-   int posx = START_POSX;
-   int posy = START_POSY;
+   int posx = SCREEN_WIDTH/2;
+   int posy = SCREEN_HEIGHT/2;
 
    gba_input input = {0};
-
-   while(1)
+   while(gba_begin_frame(&input))
    {
-      // Wait for vertical blank.
-      while(REG_VCOUNT >= SCREEN_HEIGHT) {}
-      while(REG_VCOUNT < SCREEN_HEIGHT) {}
-
       for(int y = posy; y < posy+dim; y++)
       {
+         u16 g = 31*y / SCREEN_HEIGHT;
          for(int x = posx; x < posx+dim; x++)
          {
-            draw_pixel(x, y, RGB(x*31/SCREEN_WIDTH, y*31/SCREEN_HEIGHT, 15));
+            u16 r = 31*x / SCREEN_WIDTH;
+            draw_pixel(x, y, RGB(r, g, 15));
          }
       }
 
-      gba_process_input(&input);
       if(is_held(input, BUTTON_LEFT))  posx -= 1;
       if(is_held(input, BUTTON_RIGHT)) posx += 1;
       if(is_held(input, BUTTON_UP))    posy -= 1;
@@ -55,10 +68,10 @@ int main(void)
 
       if(was_pressed(input, BUTTON_START))
       {
-         posx = START_POSX;
-         posy = START_POSY;
+         posx = SCREEN_WIDTH/2;
+         posy = SCREEN_HEIGHT/2;
          draw_gradient();
-      }
+     }
 
       for(int y = posy; y < posy+dim; y++)
       {

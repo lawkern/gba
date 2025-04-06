@@ -3,9 +3,15 @@
 /* (c) copyright 2025 Lawrence D. Kern /////////////////////////////////////// */
 
 #include <stdint.h>
-typedef uint8_t u8;
+typedef int8_t  s8;
+typedef int16_t s16;
+typedef int32_t s32;
+
+typedef uint8_t  u8;
 typedef uint16_t u16;
 typedef uint32_t u32;
+
+#define align(n) __attribute__((aligned(n)))
 
 #define REG_DISPCNT  *((volatile u16 *)0x4000000)
 #define REG_DISPSTAT *((volatile u16 *)0x4000004)
@@ -59,17 +65,17 @@ inline void gba_process_input(gba_input *input)
 // replacing the boolean logic with bit manipulations. Check back later to see
 // if this ever matters in practice.
 
-inline u32 is_held(gba_input input, gba_button button)
+inline _Bool is_held(gba_input input, gba_button button)
 {
    // The button is currently down.
    return(input.current & button);
 }
-inline u32 was_pressed(gba_input input, gba_button button)
+inline _Bool was_pressed(gba_input input, gba_button button)
 {
    // The button was pressed this frame.
    return(!(input.previous & button) && (input.current & button));
 }
-inline u32 was_released(gba_input input, gba_button button)
+inline _Bool was_released(gba_input input, gba_button button)
 {
    // The button was released this frame.
    return((input.previous & button) && !(input.current & button));
