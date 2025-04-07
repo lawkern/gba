@@ -9,5 +9,5 @@
   included ROM fixer.
 
 - RetroArch :: Calling ~make run~ will execute the compiled ROM using the mgba
-  core included with RetroArch. To use a different emulator, instead call: ~make
-  EMU=your_favorite_emulator run~.
+  core included with RetroArch. To use a different emulator, instead call:
+  ~make EMU=your_favorite_emulator run~.
