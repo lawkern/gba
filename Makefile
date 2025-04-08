@@ -13,7 +13,7 @@ compile:
 	arm-none-eabi-objcopy -O binary build/main.elf build/main.gba
 
 	$(CC) -o build/fix src/tools/fix.c
-	./build/fix -tMAIN build/main.gba
+	./build/fix -tMAIN -cCMNE -mLK build/main.gba
 
 run:
 	$(EMU) build/main.gba

@@ -11,18 +11,18 @@ typedef uint32_t u32;
 
 #pragma pack(push, 1)
 typedef struct {
-   u32 start_code;
-   u8 logo[0xA0-0x04];
-   u8 title[0xC];
+   u32 entry_point;
+   u8 logo[156];
+   u8 game_title[12];
    u32 game_code;
    u16 maker_code;
-   u8 fixed;
+   u8 fixed_value;
    u8 unit_code;
    u8 device_type;
-   u8 unused[7];
-   u8 game_version;
+   u8 reserved0[7];
+   u8 software_version;
    u8 complement;
-   u16 checksum;
+   u16 reserved1;
 } gba_header;
 #pragma pack(pop)
 
@@ -99,8 +99,7 @@ int main(int argument_count, char **arguments)
    }
 
    memcpy(header.logo, logo, sizeof(header.logo));
-   header.fixed = 0x96;
-   header.device_type = 0x00;
+   header.fixed_value = 0x96;
 
    // NOTE: Process argument flags.
    for(int argument_index = 1; argument_index < argument_count; argument_index++)
@@ -116,10 +115,10 @@ int main(int argument_count, char **arguments)
                if(value[0])
                {
                   // TODO: Does header.title need to be null-terminated?
-                  char title[sizeof(header.title)] = {0};
-                  strncpy(title, value, sizeof(header.title));
+                  char title[sizeof(header.game_title)] = {0};
+                  strncpy(title, value, sizeof(header.game_title));
 
-                  memcpy(header.title, title, sizeof(header.title));
+                  memcpy(header.game_title, title, sizeof(header.game_title));
                }
                else
                {
@@ -140,7 +139,7 @@ int main(int argument_count, char **arguments)
             case 'v': { // Update the version number.
                if(value[0])
                {
-                  header.game_version = (u8)strtoul(value, 0, 0);
+                  header.software_version = (u8)strtoul(value, 0, 0);
                }
                else
                {
@@ -168,9 +167,7 @@ int main(int argument_count, char **arguments)
       }
    }
 
-   // NOTE: Compute checksum.
-   header.complement = 0;
-   header.checksum = 0;
+   // NOTE: Compute complement.
    header.complement = compute_header_complement(&header);
 
    // NOTE: Write the updated header back to the ROM.
