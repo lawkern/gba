@@ -74,26 +74,38 @@ static inline void object_unhide(gba_object *object, u16 mode)
 }
 
 static gba_object objects[128];
+static gba_object ascii[128];
 
 int main(void)
 {
-   charblock4 *block = &TILE4_BLOCKS[4];
-   u16 *palette = (u16 *)PALETTE_OBJ;
+   memcpy(TILE4_BLOCKS[4], debug_tiles, sizeof(debug_tiles));
+   memcpy(TILE4_BLOCKS[5], text_tiles, sizeof(text_tiles));
 
-   memcpy(block, debug_tiles, sizeof(debug_tiles));
+   u16 *palette = (u16 *)PALETTE_OBJ;
    memcpy(palette, debug_palette, sizeof(debug_palette));
 
    oam_initialize(objects, countof(objects));
+   oam_initialize(ascii, countof(ascii));
 
    REGISTER_DISPCNT = DISPCNT_OBJ|DISPCNT_OBJ1D;
 
-   gba_object *object = objects + 0;
-   object->attribute0 = ATTR0_4BPP;
-   object->attribute1 = ATTR1_SIZE_32;
-   object->attribute2 = ATTR2_INDEX(0) | ATTR2_PALETTEBANK(0);
+   int object_count = 0;
+   gba_object *debug_object = objects + object_count++;
+   debug_object->attribute0 = ATTR0_4BPP;
+   debug_object->attribute1 = ATTR1_SIZE_16;
+   debug_object->attribute2 = ATTR2_INDEX(0) | ATTR2_PALETTEBANK(0);
 
-   int posx = 96;
-   int posy = 32;
+   int ascii_count = 0;
+   for(int index = 0; index < countof(text_tiles)/8; index++)
+   {
+      gba_object *object = ascii + ascii_count++;
+      object->attribute0 = ATTR0_4BPP;
+      object->attribute1 = ATTR1_SIZE_8;
+      object->attribute2 = ATTR2_INDEX(index + 512) | ATTR2_PALETTEBANK(0);
+   }
+
+   int posx = SCREEN_WIDTH/2 - 8;
+   int posy = SCREEN_HEIGHT/2 - 8;
 
    gba_input input = {0};
    while(gba_begin_frame(&input))
@@ -104,13 +116,29 @@ int main(void)
       if(is_held(input, BUTTON_DOWN))  posy += 1;
 
       is_held(input, BUTTON_START)
-         ? object_hide(object)
-         : object_unhide(object, 0);
+         ? object_hide(debug_object)
+         : object_unhide(debug_object, 0);
 
-      object_set_position(object, posx, posy);
+      object_set_position(debug_object, posx, posy);
+      for(int index = 0; index < countof(text_tiles)/8; index++)
+      {
+         int x = 8 * index;
+         int y = 0;
+
+         while(x >= SCREEN_WIDTH)
+         {
+            x -= SCREEN_WIDTH;
+            y += 8;
+         }
+
+         object_set_position(ascii + index, x, y);
+      }
 
       gba_object *dst = (gba_object *)OAM_ADDRESS + 0;
-      oam_copy(dst, objects, 1);
+      oam_copy(dst, objects, object_count);
+
+      dst = (gba_object *)OAM_ADDRESS + object_count;
+      oam_copy(dst, ascii, ascii_count);
    }
 
    return(0);
