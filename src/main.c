@@ -76,10 +76,10 @@ static inline void object_unhide(gba_object *object, u16 mode)
 static gba_object objects[128];
 static gba_object ascii[128];
 
-int main(void)
+static void test_sprites(void)
 {
-   memcpy(TILE4_BLOCKS[4], debug_tiles, sizeof(debug_tiles));
-   memcpy(TILE4_BLOCKS[5], text_tiles, sizeof(text_tiles));
+   memcpy(TILE4BLOCKS[4], debug_tiles, sizeof(debug_tiles));
+   memcpy(TILE4BLOCKS[5], text_tiles, sizeof(text_tiles));
 
    u16 *palette = (u16 *)PALETTE_OBJ;
    memcpy(palette, debug_palette, sizeof(debug_palette));
@@ -98,10 +98,10 @@ int main(void)
    int ascii_count = 0;
    for(int index = 0; index < countof(text_tiles)/8; index++)
    {
-      gba_object *object = ascii + ascii_count++;
-      object->attribute0 = ATTR0_4BPP;
-      object->attribute1 = ATTR1_SIZE_8;
-      object->attribute2 = ATTR2_INDEX(index + 512) | ATTR2_PALETTEBANK(0);
+      gba_object *character = ascii + ascii_count++;
+      character->attribute0 = ATTR0_4BPP;
+      character->attribute1 = ATTR1_SIZE_8;
+      character->attribute2 = ATTR2_INDEX(index + 512) | ATTR2_PALETTEBANK(0);
    }
 
    int posx = SCREEN_WIDTH/2 - 8;
@@ -120,6 +120,7 @@ int main(void)
          : object_unhide(debug_object, 0);
 
       object_set_position(debug_object, posx, posy);
+
       for(int index = 0; index < countof(text_tiles)/8; index++)
       {
          int x = 8 * index;
@@ -139,6 +140,85 @@ int main(void)
 
       dst = (gba_object *)OAM_ADDRESS + object_count;
       oam_copy(dst, ascii, ascii_count);
+   }
+}
+
+static void output_text(screenblock *sb, char *text)
+{
+   u16 *dst = sb[0];
+   u16 *line_start = sb[0];
+   while(*text)
+   {
+      if(*text == '\n')
+      {
+         dst += 32 - ((dst-line_start) % (SCREEN_WIDTH/8));
+         line_start = dst;
+         text++;
+         continue;
+      }
+
+      *dst++ = SE_INDEX(*text - ' ');
+      text++;
+   }
+}
+
+int main(void)
+{
+   (void)test_sprites;
+
+   int charblock_index = 0;
+   charblock4 *cb = TILE4BLOCKS + charblock_index;
+   memcpy(cb, text_tiles, sizeof(text_tiles));
+
+   int screenblock_index = 30;
+   screenblock *sb = SCREENBLOCKS + screenblock_index;
+   memcpy(sb, text_map, sizeof(text_map));
+
+   memcpy((u16 *)PALETTE_BG, text_palette, sizeof(text_palette));
+
+   REGISTER_BG0CNT = BG_CBB(charblock_index)|BG_SBB(screenblock_index)|BG_4BPP|BG_REG_64x32;
+   REGISTER_DISPCNT = DISPCNT_MODE0|DISPCNT_BG0;
+
+   output_text(sb,
+               "#include <stdio.h>\n"
+               "\n"
+               "struct foo_struct\n"
+               "{\n"
+               "   u32 bar;\n"
+               "};\n"
+               "\n"
+               "main :: ([]string arguments)\n"
+               "{\n"
+               "   printf(\"I <3 the GBA!!\\n\")\n"
+               "\n"
+               "   foo_struct foo = {0};\n"
+               "   foo.bar = 1;\n"
+               "\n"
+               "   foo_struct *poo = &foo;\n"
+               "   poo->bar = 2;\n"
+               "\n"
+               "   return(0);\n"
+               "}");
+
+   int x = 0;
+   int y = 0;
+
+   gba_input input = {0};
+   while(gba_begin_frame(&input))
+   {
+      if(was_pressed(input, BUTTON_LEFT))  x -= 8;
+      if(was_pressed(input, BUTTON_RIGHT)) x += 8;
+      if(was_pressed(input, BUTTON_UP))    y -= 8;
+      if(was_pressed(input, BUTTON_DOWN))  y += 8;
+
+      REGISTER_BG0HOFS = x;
+      REGISTER_BG0VOFS = y;
+
+      if(was_pressed(input, BUTTON_START))
+      {
+         static int index = 0;
+         *sb[0] = SE_INDEX(index++);
+      }
    }
 
    return(0);

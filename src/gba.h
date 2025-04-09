@@ -22,15 +22,6 @@ typedef uint32_t u32;
 #define VRAM_ADDRESS    0x06000000
 #define OAM_ADDRESS     0x07000000
 
-// Video registers:
-#define REGISTER_DISPCNT  *(volatile u32 *)(IO_ADDRESS + 0x00)
-#define REGISTER_DISPSTAT *(volatile u16 *)(IO_ADDRESS + 0x04)
-#define REGISTER_VCOUNT   *(volatile u16 *)(IO_ADDRESS + 0x06)
-
-// Input registers:
-#define REGISTER_KEYINPUT *(volatile u16 *)(IO_ADDRESS + 0x0130)
-#define REGISTER_KEYCNT   *(volatile u16 *)(IO_ADDRESS + 0x0132)
-
 // Palette addresses:
 #define PALETTE_BG  (PALETTE_ADDRESS + 0x0000)
 #define PALETTE_OBJ (PALETTE_ADDRESS + 0x0200)
@@ -38,6 +29,43 @@ typedef uint32_t u32;
 // VRAM addresses:
 #define VRAM_BG  (VRAM_ADDRESS + 0x0A000)
 #define VRAM_OBJ (VRAM_ADDRESS + 0x10000)
+
+// LCD I/O Registers:
+#define REGISTER_DISPCNT  *(volatile u16 *)(IO_ADDRESS + 0x00) // LCD Control
+#define REGISTER_DISPSTAT *(volatile u16 *)(IO_ADDRESS + 0x04) // General LCD Status (STAT,LYC)
+#define REGISTER_VCOUNT   *(volatile u16 *)(IO_ADDRESS + 0x06) // Vertical Counter (LY)
+
+#define REGISTER_BG0CNT   *(volatile u16 *)(IO_ADDRESS + 0x08) // BG0 Control
+#define REGISTER_BG1CNT   *(volatile u16 *)(IO_ADDRESS + 0x0A) // BG1 Control
+#define REGISTER_BG2CNT   *(volatile u16 *)(IO_ADDRESS + 0x0C) // BG2 Control
+#define REGISTER_BG3CNT   *(volatile u16 *)(IO_ADDRESS + 0x0E) // BG3 Control
+
+#define REGISTER_BG0HOFS  *(volatile u16 *)(IO_ADDRESS + 0x10) // BG0 X-Offset
+#define REGISTER_BG0VOFS  *(volatile u16 *)(IO_ADDRESS + 0x12) // BG0 Y-Offset
+#define REGISTER_BG1HOFS  *(volatile u16 *)(IO_ADDRESS + 0x14) // BG1 X-Offset
+#define REGISTER_BG1VOFS  *(volatile u16 *)(IO_ADDRESS + 0x16) // BG1 Y-Offset
+#define REGISTER_BG2HOFS  *(volatile u16 *)(IO_ADDRESS + 0x18) // BG2 X-Offset
+#define REGISTER_BG2VOFS  *(volatile u16 *)(IO_ADDRESS + 0x1A) // BG2 Y-Offset
+#define REGISTER_BG3HOFS  *(volatile u16 *)(IO_ADDRESS + 0x1C) // BG3 X-Offset
+#define REGISTER_BG3VOFS  *(volatile u16 *)(IO_ADDRESS + 0x1E) // BG3 Y-Offset
+
+#define REGISTER_BG2PA    *(volatile u16 *)(IO_ADDRESS + 0x20) // BG2 Rotation/Scaling Parameter A (dx)
+#define REGISTER_BG2PB    *(volatile u16 *)(IO_ADDRESS + 0x22) // BG2 Rotation/Scaling Parameter B (dmx)
+#define REGISTER_BG2PC    *(volatile u16 *)(IO_ADDRESS + 0x24) // BG2 Rotation/Scaling Parameter C (dy)
+#define REGISTER_BG2PD    *(volatile u16 *)(IO_ADDRESS + 0x26) // BG2 Rotation/Scaling Parameter D (dmy)
+#define REGISTER_BG2X     *(volatile u16 *)(IO_ADDRESS + 0x28) // BG2 Reference Point X-Coordinate
+#define REGISTER_BG2Y     *(volatile u16 *)(IO_ADDRESS + 0x2C) // BG2 Reference Point Y-Coordinate
+
+#define REGISTER_BG3PA    *(volatile u16 *)(IO_ADDRESS + 0x30) // BG3 Rotation/Scaling Parameter A (dx)
+#define REGISTER_BG3PB    *(volatile u16 *)(IO_ADDRESS + 0x32) // BG3 Rotation/Scaling Parameter B (dmx)
+#define REGISTER_BG3PC    *(volatile u16 *)(IO_ADDRESS + 0x34) // BG3 Rotation/Scaling Parameter C (dy)
+#define REGISTER_BG3PD    *(volatile u16 *)(IO_ADDRESS + 0x36) // BG3 Rotation/Scaling Parameter D (dmy)
+#define REGISTER_BG3X     *(volatile u16 *)(IO_ADDRESS + 0x38) // BG3 Reference Point X-Coordinate
+#define REGISTER_BG3Y     *(volatile u16 *)(IO_ADDRESS + 0x3C) // BG3 Reference Point Y-Coordinate
+
+// Keypad Input:
+#define REGISTER_KEYINPUT *(volatile u16 *)(IO_ADDRESS + 0x0130) // Key Status
+#define REGISTER_KEYCNT   *(volatile u16 *)(IO_ADDRESS + 0x0132) // Key Interrupt Control
 
 // Bit flag manipulations:
 #define FLAG_PREP(name, value) (((value) << name##_SHIFT) & name##_MASK)
@@ -135,8 +163,8 @@ typedef struct {
 typedef tile4 charblock4[512];
 typedef tile8 charblock8[256];
 
-#define TILE4_BLOCKS ((charblock4 *)VRAM_ADDRESS)
-#define TILE8_BLOCKS ((charblock8 *)VRAM_ADDRESS)
+#define TILE4BLOCKS ((charblock4 *)VRAM_ADDRESS)
+#define TILE8BLOCKS ((charblock8 *)VRAM_ADDRESS)
 
 // Object attributes:
 typedef struct {
@@ -244,3 +272,54 @@ typedef struct {
 #define ATTR2_PALETTEBANK_MASK 0x0C00
 #define ATTR2_PALETTEBANK_SHIFT 10
 #define ATTR2_PALETTEBANK(value) ((value) << ATTR2_PALETTEBANK_SHIFT)
+
+// Background Control:
+#define BG_PRIORITY_MASK 0x03
+#define BG_PRIORITY_SHIFT 0
+#define BG_PRIORITY(value) ((value) << BG_PRIORITY_SHIFT)
+
+#define BG_CBB_MASK 0x0C
+#define BG_CBB_SHIFT 2
+#define BG_CBB(value) ((value) << BG_CBB_SHIFT) // Character base block
+
+#define BG_MOSAIC 0x40 // Enable mosaic effect
+#define BG_4BPP   0x00 // 16 color mode
+#define BG_8BPP   0x80 // 256 color mode
+
+#define BG_SBB_MASK 0x1F00
+#define BG_SBB_SHIFT 8
+#define BG_SBB(value) ((value) << BG_SBB_SHIFT) // Screen base block
+
+#define BG_WRAP 0x2000 // Enable affine wrapping
+
+#define BG_SIZE_MASK 0xC000
+#define BG_SIZE_SHIFT 14
+#define BG_SIZE(value) ((value) << BG_SIZE_SHIFT) // Background size
+
+#define BG_REG_32x32   0x00
+#define BG_REG_64x32   0x01
+#define BG_REG_32x64   0x02
+#define BG_REG_64x64   0x03
+
+#define BG_AFF_16x16   0x00
+#define BG_AFF_32x32   0x01
+#define BG_AFF_64x64   0x02
+#define BG_AFF_128x128 0x03
+
+typedef u16 screenblock[1024];
+#define SCREENBLOCKS ((screenblock *)VRAM_ADDRESS)
+
+#define SE_INDEX_MASK 0x03FF
+#define SE_INDEX_SHIFT 0
+#define SE_INDEX(value) ((value) << SE_INDEX_SHIFT) // Tile index of screen entry
+
+#define SE_HFLIP 0x0400 // Horizontal flip
+#define SE_VFLIP 0x0800 // Vertical flip
+
+#define SE_FLIP_MASK 0x0C00
+#define SE_FLIP_SHIFT 10
+#define SE_FLIP(value) ((value) << SE_FLIP_SHIFT)
+
+#define SE_PALBANK_MASK 0xF000
+#define SE_PALBANK_SHIFT 0
+#define SE_PALBANK(value) ((value) << SE_PALBANK_SHIFT) // Palette bank for 16-color mode
